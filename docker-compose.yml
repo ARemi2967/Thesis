@@ -1,0 +1,531 @@
+version: '3.8'
+services:
+  gateway:
+    build: ./gateway
+    container_name: deserialization-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - GATEWAY_MODE=true
+      - BS5_ROOT=/data
+    volumes:
+      - ./gadget-dependencies:/data/gadget-dependencies:ro
+      - ./generated-env:/data/generated-env:ro
+    networks:
+      - deserialization-net
+
+  axis2:
+    build: ./generated-env/axis2
+    container_name: axis2-env
+    ports:
+      - "8081:8080"
+    environment:
+      - CHAIN_NAME=Axis2链
+    networks:
+      - deserialization-net
+
+  beanshellref:
+    build: ./generated-env/beanshellref
+    container_name: beanshellref-env
+    ports:
+      - "8082:8080"
+    environment:
+      - CHAIN_NAME=BeanshellRef 利用
+    networks:
+      - deserialization-net
+
+  c3p01:
+    build: ./generated-env/c3p01
+    container_name: c3p01-env
+    ports:
+      - "8083:8080"
+    environment:
+      - CHAIN_NAME=C3P0反序列化1
+    networks:
+      - deserialization-net
+
+  c3p02:
+    build: ./generated-env/c3p02
+    container_name: c3p02-env
+    ports:
+      - "8084:8080"
+    environment:
+      - CHAIN_NAME=C3P0反序列化2
+    networks:
+      - deserialization-net
+
+  cb1jndi1:
+    build: ./generated-env/cb1jndi1
+    container_name: cb1jndi1-env
+    ports:
+      - "8085:8080"
+    environment:
+      - CHAIN_NAME=CB1 JNDI链1
+    networks:
+      - deserialization-net
+
+  cb1jndi2:
+    build: ./generated-env/cb1jndi2
+    container_name: cb1jndi2-env
+    ports:
+      - "8086:8080"
+    environment:
+      - CHAIN_NAME=CB1 JNDI链2
+    networks:
+      - deserialization-net
+
+  cb1:
+    build: ./generated-env/cb1
+    container_name: cb1-env
+    ports:
+      - "8087:8080"
+    environment:
+      - CHAIN_NAME=CB1链
+    networks:
+      - deserialization-net
+
+  cb2:
+    build: ./generated-env/cb2
+    container_name: cb2-env
+    ports:
+      - "8088:8080"
+    environment:
+      - CHAIN_NAME=CB2链
+    networks:
+      - deserialization-net
+
+  dnslogclass:
+    build: ./generated-env/dnslogclass
+    container_name: dnslogclass-env
+    ports:
+      - "8089:8080"
+    environment:
+      - CHAIN_NAME=DNSLog探测类
+    networks:
+      - deserialization-net
+
+  dnslogchain:
+    build: ./generated-env/dnslogchain
+    container_name: dnslogchain-env
+    ports:
+      - "8090:8080"
+    environment:
+      - CHAIN_NAME=DNSLog探测链
+    networks:
+      - deserialization-net
+
+  druidjdbc:
+    build: ./generated-env/druidjdbc
+    container_name: druidjdbc-env
+    ports:
+      - "8091:8080"
+    environment:
+      - CHAIN_NAME=Druid Jdbc 利用
+    networks:
+      - deserialization-net
+
+  fastjson2:
+    build: ./generated-env/fastjson2
+    container_name: fastjson2-env
+    ports:
+      - "8092:8080"
+    environment:
+      - CHAIN_NAME=Fastjson2链
+    networks:
+      - deserialization-net
+
+  fastjsonc3p0h2:
+    build: ./generated-env/fastjsonc3p0h2
+    container_name: fastjsonc3p0h2-env
+    ports:
+      - "8093:8080"
+    environment:
+      - CHAIN_NAME=Fastjson C3p0 Jdbc h2链
+    networks:
+      - deserialization-net
+
+  fastjsonjndi:
+    build: ./generated-env/fastjsonjndi
+    container_name: fastjsonjndi-env
+    ports:
+      - "8094:8080"
+    environment:
+      - CHAIN_NAME=Fastjson JNDI链
+    networks:
+      - deserialization-net
+
+  fastjson:
+    build: ./generated-env/fastjson
+    container_name: fastjson-env
+    ports:
+      - "8095:8080"
+    environment:
+      - CHAIN_NAME=Fastjson链
+    networks:
+      - deserialization-net
+
+  groovy:
+    build: ./generated-env/groovy
+    container_name: groovy-env
+    ports:
+      - "8096:8080"
+    environment:
+      - CHAIN_NAME=Groovy 脚本执行
+    networks:
+      - deserialization-net
+
+  h2jdbcurl:
+    build: ./generated-env/h2jdbcurl
+    container_name: h2jdbcurl-env
+    ports:
+      - "8097:8080"
+    environment:
+      - CHAIN_NAME=H2 Jdbc Url
+    networks:
+      - deserialization-net
+
+  hessianfastjson:
+    build: ./generated-env/hessianfastjson
+    container_name: hessianfastjson-env
+    ports:
+      - "8098:8080"
+    environment:
+      - CHAIN_NAME=Hessian Fastjson 链
+    networks:
+      - deserialization-net
+
+  hessianjackson:
+    build: ./generated-env/hessianjackson
+    container_name: hessianjackson-env
+    ports:
+      - "8099:8080"
+    environment:
+      - CHAIN_NAME=Hessian Jackson 链
+    networks:
+      - deserialization-net
+
+  hessianxbean:
+    build: ./generated-env/hessianxbean
+    container_name: hessianxbean-env
+    ports:
+      - "8100:8080"
+    environment:
+      - CHAIN_NAME=Hessian XBean 链
+    networks:
+      - deserialization-net
+
+  hikarijdbc:
+    build: ./generated-env/hikarijdbc
+    container_name: hikarijdbc-env
+    ports:
+      - "8101:8080"
+    environment:
+      - CHAIN_NAME=HikariJdbcAttack Jdbc 利用
+    networks:
+      - deserialization-net
+
+  jacksonc3p0h2:
+    build: ./generated-env/jacksonc3p0h2
+    container_name: jacksonc3p0h2-env
+    ports:
+      - "8102:8080"
+    environment:
+      - CHAIN_NAME=Jackson C3p0 Jdbc h2链
+    networks:
+      - deserialization-net
+
+  jackson:
+    build: ./generated-env/jackson
+    container_name: jackson-env
+    ports:
+      - "8103:8080"
+    environment:
+      - CHAIN_NAME=Jackson链
+    networks:
+      - deserialization-net
+
+  jdk17rce:
+    build: ./generated-env/jdk17rce
+    container_name: jdk17rce-env
+    ports:
+      - "8104:8080"
+    environment:
+      - CHAIN_NAME=JDK17 RCE链
+    networks:
+      - deserialization-net
+
+  jdk17rce2:
+    build: ./generated-env/jdk17rce2
+    container_name: jdk17rce2-env
+    ports:
+      - "8105:8080"
+    environment:
+      - CHAIN_NAME=JDK17 RCE链2
+    networks:
+      - deserialization-net
+
+  jdkbcel:
+    build: ./generated-env/jdkbcel
+    container_name: jdkbcel-env
+    ports:
+      - "8106:8080"
+    environment:
+      - CHAIN_NAME=JDK原生BCEL链
+    networks:
+      - deserialization-net
+
+  jdkjndi:
+    build: ./generated-env/jdkjndi
+    container_name: jdkjndi-env
+    ports:
+      - "8107:8080"
+    environment:
+      - CHAIN_NAME=JDK原生JNDI链
+    networks:
+      - deserialization-net
+
+  jdknative1:
+    build: ./generated-env/jdknative1
+    container_name: jdknative1-env
+    ports:
+      - "8108:8080"
+    environment:
+      - CHAIN_NAME=JDK原生链1
+    networks:
+      - deserialization-net
+
+  jdknative2:
+    build: ./generated-env/jdknative2
+    container_name: jdknative2-env
+    ports:
+      - "8109:8080"
+    environment:
+      - CHAIN_NAME=JDK原生链2（慎用）
+    networks:
+      - deserialization-net
+
+  jspfile:
+    build: ./generated-env/jspfile
+    container_name: jspfile-env
+    ports:
+      - "8110:8080"
+    environment:
+      - CHAIN_NAME=JSP文件
+    networks:
+      - deserialization-net
+
+  k1:
+    build: ./generated-env/k1
+    container_name: k1-env
+    ports:
+      - "8111:8080"
+    environment:
+      - CHAIN_NAME=K1链
+    networks:
+      - deserialization-net
+
+  k1deser1:
+    build: ./generated-env/k1deser1
+    container_name: k1deser1-env
+    ports:
+      - "8112:8080"
+    environment:
+      - CHAIN_NAME=K1链二次反序列化1
+    networks:
+      - deserialization-net
+
+  k1deser2:
+    build: ./generated-env/k1deser2
+    container_name: k1deser2-env
+    ports:
+      - "8113:8080"
+    environment:
+      - CHAIN_NAME=K1链二次反序列化2
+    networks:
+      - deserialization-net
+
+  k2:
+    build: ./generated-env/k2
+    container_name: k2-env
+    ports:
+      - "8114:8080"
+    environment:
+      - CHAIN_NAME=K2链
+    networks:
+      - deserialization-net
+
+  k3:
+    build: ./generated-env/k3
+    container_name: k3-env
+    ports:
+      - "8115:8080"
+    environment:
+      - CHAIN_NAME=K3链
+    networks:
+      - deserialization-net
+
+  k4:
+    build: ./generated-env/k4
+    container_name: k4-env
+    ports:
+      - "8116:8080"
+    environment:
+      - CHAIN_NAME=K4链
+    networks:
+      - deserialization-net
+
+  readfile:
+    build: ./generated-env/readfile
+    container_name: readfile-env
+    ports:
+      - "8117:8080"
+      - "3306:3306"
+    environment:
+      - CHAIN_NAME=ReadFile
+    networks:
+      - deserialization-net
+
+  rome1:
+    build: ./generated-env/rome1
+    container_name: rome1-env
+    ports:
+      - "8118:8080"
+    environment:
+      - CHAIN_NAME=Rome1低版本二次反序列化链
+    networks:
+      - deserialization-net
+
+  rome2:
+    build: ./generated-env/rome2
+    container_name: rome2-env
+    ports:
+      - "8119:8080"
+    environment:
+      - CHAIN_NAME=Rome2高版本二次反序列化链
+    networks:
+      - deserialization-net
+
+  sleepchain:
+    build: ./generated-env/sleepchain
+    container_name: sleepchain-env
+    ports:
+      - "8120:8080"
+    environment:
+      - CHAIN_NAME=Sleep探测链
+    networks:
+      - deserialization-net
+
+  snakeyaml:
+    build: ./generated-env/snakeyaml
+    container_name: snakeyaml-env
+    ports:
+      - "8121:8080"
+    environment:
+      - CHAIN_NAME=SnakeYaml 利用
+    networks:
+      - deserialization-net
+
+  springbootcharsets:
+    build: ./generated-env/springbootcharsets
+    container_name: springbootcharsets-env
+    ports:
+      - "8122:8080"
+    environment:
+      - CHAIN_NAME=SpringBoot charsets.jar生成
+    networks:
+      - deserialization-net
+
+  springbeanxml:
+    build: ./generated-env/springbeanxml
+    container_name: springbeanxml-env
+    ports:
+      - "8123:8080"
+    environment:
+      - CHAIN_NAME=Spring Bean Xml 加载字节码
+    networks:
+      - deserialization-net
+
+  springjndi1:
+    build: ./generated-env/springjndi1
+    container_name: springjndi1-env
+    ports:
+      - "8124:8080"
+    environment:
+      - CHAIN_NAME=Spring JNDI链1
+    networks:
+      - deserialization-net
+
+  springjndi2:
+    build: ./generated-env/springjndi2
+    container_name: springjndi2-env
+    ports:
+      - "8125:8080"
+    environment:
+      - CHAIN_NAME=Spring JNDI链2
+    networks:
+      - deserialization-net
+
+  springexec:
+    build: ./generated-env/springexec
+    container_name: springexec-env
+    ports:
+      - "8126:8080"
+    environment:
+      - CHAIN_NAME=Spring 命令执行
+    networks:
+      - deserialization-net
+
+  xslt:
+    build: ./generated-env/xslt
+    container_name: xslt-env
+    ports:
+      - "8127:8080"
+    environment:
+      - CHAIN_NAME=Xslt 代码执行
+    networks:
+      - deserialization-net
+
+  hessiandeser:
+    build: ./generated-env/hessiandeser
+    container_name: hessiandeser-env
+    ports:
+      - "8128:8080"
+    environment:
+      - CHAIN_NAME=二次反序列化链
+    networks:
+      - deserialization-net
+
+  deserbomb:
+    build: ./generated-env/deserbomb
+    container_name: deserbomb-env
+    ports:
+      - "8129:8080"
+    environment:
+      - CHAIN_NAME=反序列化炸弹
+    networks:
+      - deserialization-net
+
+  cmdexec:
+    build: ./generated-env/cmdexec
+    container_name: cmdexec-env
+    ports:
+      - "8130:8080"
+    environment:
+      - CHAIN_NAME=命令执行
+    networks:
+      - deserialization-net
+
+  tomcatel:
+    build: ./generated-env/tomcatel
+    container_name: tomcatel-env
+    ports:
+      - "8131:8080"
+    environment:
+      - CHAIN_NAME=经典 Tomcat EL 执行
+    networks:
+      - deserialization-net
+
+
+networks:
+  deserialization-net:
+    driver: bridge

@@ -1,0 +1,95 @@
+# MCP 测试工具配置文件
+
+# Gateway 配置
+gateway:
+  url: "http://localhost:8080"
+  port: 8080
+  timeout: 30
+
+# Payload 生成器配置
+payload_generator:
+  cli_jars_path: "cli-chains/cli-chains.jar"
+  temp_dir: "./temp-payloads"
+  chains_summary: "gadget-dependencies/gadget_chains_summary.json"
+
+# 验证服务配置
+verification:
+  # DNSLog 平台配置（可选）
+  dnslog:
+    # 使用 dnslog.cn（需要手动获取 token）
+    # platform: "dnslog.cn"
+    # api_url: "http://www.dnslog.cn"
+    # token: "${DNSLOG_TOKEN}"
+
+    # 或使用 ceye.io
+    # platform: "ceye.io"
+    # api_url: "http://api.ceye.io/v1"
+    # token: "${CEYE_TOKEN}"
+    # identifier: "your_identifier"
+
+    # 不使用 DNSLog 平台时，使用 Sleep 模式替代
+    enabled: false
+
+  # JNDI/LDAP 服务器配置（可选）
+  ldap_server:
+    enabled: false
+    host: "0.0.0.0"
+    port: 1389
+    callback_port: 9999
+
+# 测试套件配置
+test_suites:
+  # 快速验证模式：仅测试每条链的可用性
+  quick:
+    chains: "all"  # 或指定链列表 ["CB1链", "K1链"]
+    mode: "dnslog"
+    timeout_per_chain: 10
+    parallel: 5
+    skip_info_chains: true  # 跳过 INFO 类型链
+
+  # 完整测试模式：测试多种 payload 类型
+  full:
+    chains: "all"
+    modes: ["dnslog", "sleep", "rce"]
+    parallel: 5
+    skip_info_chains: true
+
+  # 按控制器类型测试
+  by_controller_type:
+    controller_types:
+      - NATIVE
+      - HESSIAN
+      - AMF
+      - JNDI_REF
+      - JNDI_BASIC
+      - JDBC
+    mode: "dnslog"
+    parallel: 3
+
+# 报告配置
+report:
+  output_dir: "./test-reports"
+  formats: ["json"]  # 可选: json, html, markdown
+  include_failed_details: true
+
+# 日志配置
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  console: true
+  file: "./test-reports/test.log"
+
+# 链特定配置（可选）
+chains:
+  # 示例：跳过某些链
+  skip:
+    - "JDK原生链2（慎用）"  # 可能导致 JVM 崩溃
+    - "ReadFile"  # FAKE_MYSQL 类型，需要客户端连接
+
+  # 示例：为特定链指定测试模式
+  overrides:
+    "CB1链":
+      mode: "rce"
+      command: "whoami"
+    "Fastjson链":
+      mode: "sleep"
+      seconds: 3
