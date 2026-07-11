@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>依赖可视化</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #10b981;
+            --dark-color: #1f2937;
+        }
+        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .navbar { background-color: var(--dark-color); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .main-container { margin-top: 2rem; margin-bottom: 2rem; }
+        .control-panel { background:#fff; border-radius:12px; padding:1.5rem; box-shadow:0 4px 6px rgba(0,0,0,.07); margin-bottom:2rem; }
+        .stats-card { background:#fff; border-radius:12px; padding:1.5rem; box-shadow:0 4px 6px rgba(0,0,0,.07); text-align:center; }
+        .stats-number { font-size:2.5rem; font-weight:700; color:var(--primary-color); margin-bottom:.5rem; }
+        #graph-container { background:#fff; border-radius:12px; padding:2rem; box-shadow:0 4px 6px rgba(0,0,0,.07); min-height:600px; position:relative; }
+        .node { cursor:pointer; }
+        /* Node colours by type */
+        .node-chain      { fill:#2563eb; stroke:#1e40af; stroke-width:2px; }
+        .node-pipeline   { fill:#dc2626; stroke:#b91c1c; stroke-width:2px; }
+        .node-artifact   { fill:#10b981; stroke:#059669; stroke-width:2px; }
+        .link { fill:none; stroke:#cbd5e1; stroke-width:1.5px; marker-end:url(#arrowhead); }
+        /* label ON the node (white text, clipped to short name) */
+        .node-label-inner { font-size:10px; font-weight:600; text-anchor:middle; pointer-events:none; fill:#fff; }
+        /* label BELOW the node (dark text on white background) */
+        .node-label { font-size:11px; font-weight:500; text-anchor:middle; pointer-events:none; fill:#1f2937; }
+        .legend { position:absolute; top:20px; right:20px; background:#fff; padding:1rem; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,.1); font-size:13px; }
+        .legend-item { display:flex; align-items:center; margin-bottom:.4rem; }
+        .legend-color  { width:18px; height:18px; border-radius:4px; margin-right:.5rem; flex-shrink:0; }
+        .tooltip-d3 { position:absolute; background:rgba(0,0,0,.82); color:#fff; padding:8px 12px; border-radius:6px; font-size:12px; pointer-events:none; opacity:0; transition:opacity .2s; max-width:220px; line-height:1.5; }
+        .loading-graph { display:none; text-align:center; padding:3rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-arrow-left me-2"></i>返回主页</a>
+            <span class="navbar-text"><i class="fas fa-project-diagram me-1"></i>依赖关系可视化</span>
+        </div>
+    </nav>
+
+    <div class="container main-container">
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>控制面板</h5>
+                </div>
+                <div class="col-md-8">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <select class="form-select" id="chainSelect">
+                                <option value="">选择链...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="categoryFilter">
+                                <option value="">所有类别</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100" onclick="updateGraph()">
+                                <i class="fas fa-sync me-2"></i>更新图表
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card"><div class="stats-number" id="totalChains">0</div><div>总链数</div></div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card"><div class="stats-number" id="totalPipeline">0</div><div>组件总数</div></div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card"><div class="stats-number" id="totalArtifacts">0</div><div>Maven依赖总数</div></div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card"><div class="stats-number" id="avgArtifacts">0</div><div>平均依赖数</div></div>
+            </div>
+        </div>
+
+        <!-- Graph -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-project-diagram me-2"></i>依赖关系图</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="loading-graph" id="loadingGraph">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-3">正在生成依赖图...</p>
+                </div>
+                <div id="graph-container">
+                    <svg id="dependency-graph" width="100%" height="600"></svg>
+                    <div class="legend">
+                        <h6>图例</h6>
+                        <div class="legend-item"><div class="legend-color" style="background:#2563eb"></div><span>Gadget Chain</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background:#dc2626"></div><span>Pipeline 组件</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background:#10b981"></div><span>Maven Artifact</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip-d3" id="tooltip"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ── State ─────────────────────────────────────────────────────────
+        let allChainData = {};   // chainName -> {pipeline, maven_artifacts, payload_types, ...}
+        let selectedChain = '';
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadAllData();
+        });
+
+        // ── Data loading ──────────────────────────────────────────────────
+
+        function loadAllData() {
+            // /api/dependencies returns the full chainsInfo map (chainName -> chain object)
+            fetch('/api/dependencies')
+                .then(r => r.json())
+                .then(data => {
+                    allChainData = data;
+                    populateChainSelect(Object.keys(data));
+                    populateCategoryFilter(data);
+                    updateStatistics();
+                    // Draw first chain by default
+                    const keys = Object.keys(data);
+                    if (keys.length > 0) {
+                        document.getElementById('chainSelect').value = keys[0];
+                        selectedChain = keys[0];
+                        drawGraph(data[selectedChain]);
+                    }
+                })
+                .catch(err => console.error('Failed to load chain data:', err));
+        }
+
+        function populateChainSelect(chainNames) {
+            const sel = document.getElementById('chainSelect');
+            sel.innerHTML = '<option value="">选择链...</option>';
+            chainNames.sort().forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                sel.appendChild(opt);
+            });
+        }
+
+        function populateCategoryFilter(data) {
+            const cats = new Set();
+            Object.values(data).forEach(chain => {
+                const pts = chain.payload_types || [];
+                if (pts.length > 0) cats.add(primaryCategory(pts[0]));
+            });
+            const sel = document.getElementById('categoryFilter');
+            sel.innerHTML = '<option value="">所有类别</option>';
+            [...cats].sort().forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat; opt.textContent = cat;
+                sel.appendChild(opt);
+            });
+            sel.addEventListener('change', function () {
+                const cat = this.value;
+                const chainSel = document.getElementById('chainSelect');
+                chainSel.innerHTML = '<option value="">选择链...</option>';
+                Object.entries(allChainData)
+                    .filter(([, chain]) => {
+                        if (!cat) return true;
+                        const pts = chain.payload_types || [];
+                        return pts.length > 0 && primaryCategory(pts[0]) === cat;
+                    })
+                    .sort(([a],[b]) => a.localeCompare(b))
+                    .forEach(([name]) => {
+                        const opt = document.createElement('option');
+                        opt.value = name; opt.textContent = name;
+                        chainSel.appendChild(opt);
+                    });
+            });
+        }
+
+        function primaryCategory(pt) {
+            if (!pt) return 'Unknown';
+            if (pt.startsWith('Hessian'))     return 'Hessian';
+            if (pt.startsWith('JNDIResource') || pt.startsWith('JNDIRef')) return 'JNDI_REF';
+            if (pt.startsWith('JNDIBasic')   || pt.startsWith('Bytecode')
+                    || pt.startsWith('JNDIShow'))  return 'JNDI_BASIC';
+            if (pt.startsWith('JavaNative')  || pt.startsWith('JNDI')
+                    || pt.startsWith('JRMPListener') || pt.startsWith('FakeMySQL')
+                    || pt.startsWith('Shiro'))      return 'JavaNative';
+            return pt;
+        }
+
+        function updateGraph() {
+            selectedChain = document.getElementById('chainSelect').value;
+            if (!selectedChain) {
+                d3.select('#dependency-graph').selectAll('*').remove();
+                return;
+            }
+            const data = allChainData[selectedChain];
+            if (!data) return;
+            drawGraph(data);
+        }
+
+        // ── D3 graph ──────────────────────────────────────────────────────
+
+        /**
+         * Draw force-directed graph using new MCP v3 data fields:
+         *   pipeline        -> red  nodes (component steps in the gadget pipeline)
+         *   maven_artifacts -> green nodes (Maven library dependencies)
+         */
+        function drawGraph(chainData) {
+            d3.select('#dependency-graph').selectAll('*').remove();
+
+            const container = document.getElementById('graph-container');
+            const W = container.clientWidth - 40;
+            const H = 600;
+
+            const svg = d3.select('#dependency-graph')
+                .attr('width', W).attr('height', H);
+
+            // Arrow marker
+            svg.append('defs').append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 22).attr('refY', 0)
+                .attr('markerWidth', 6).attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#cbd5e1');
+
+            const nodes = [];
+            const links = [];
+
+            // ── Chain root node ──
+            nodes.push({ id: selectedChain, type: 'chain', label: selectedChain, r: 26,
+                         meta: { payloadTypes: (chainData.payload_types || []).join(', ') } });
+
+            // ── Pipeline component nodes ──
+            (chainData.pipeline || []).forEach((step, i) => {
+                const nodeId = 'pip_' + i + '_' + step;
+                nodes.push({ id: nodeId, type: 'pipeline', label: step, r: 18, meta: { step: i + 1 } });
+                // link from previous step or chain root
+                links.push({ source: i === 0 ? selectedChain : 'pip_' + (i-1) + '_' + chainData.pipeline[i-1],
+                              target: nodeId });
+            });
+
+            // ── Maven artifact nodes ──
+            const pipeline = chainData.pipeline || [];
+            const lastPipId = pipeline.length > 0
+                ? 'pip_' + (pipeline.length - 1) + '_' + pipeline[pipeline.length - 1]
+                : selectedChain;
+
+            (chainData.maven_artifacts || []).forEach((art, i) => {
+                const nodeId = 'art_' + i + '_' + art.artifactId;
+                nodes.push({
+                    id: nodeId, type: 'artifact', r: 16,
+                    label: art.artifactId,
+                    meta: { groupId: art.groupId, version: art.version, source: art.resolved_from }
+                });
+                links.push({ source: lastPipId, target: nodeId });
+            });
+
+            // Force simulation
+            const sim = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(90))
+                .force('charge', d3.forceManyBody().strength(-280))
+                .force('center', d3.forceCenter(W / 2, H / 2))
+                .force('collide', d3.forceCollide().radius(d => d.r + 10));
+
+            const link = svg.append('g').selectAll('line')
+                .data(links).enter().append('line').attr('class', 'link');
+
+            const node = svg.append('g').selectAll('circle')
+                .data(nodes).enter().append('circle')
+                .attr('class', d => 'node node-' + d.type)
+                .attr('r', d => d.r)
+                .call(d3.drag()
+                    .on('start', (e, d) => { if (!e.active) sim.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
+                    .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; })
+                    .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+            // Inner label: short name in white, centred inside the circle
+            const labelInner = svg.append('g').selectAll('text.inner')
+                .data(nodes).enter().append('text')
+                .attr('class', 'node-label-inner')
+                .attr('dominant-baseline', 'central')
+                .text(d => {
+                    const max = d.type === 'chain' ? 5 : 4;
+                    return d.label.length > max ? d.label.slice(0, max) + '…' : d.label;
+                });
+
+            // Outer label: full name in dark colour, rendered below the circle
+            const label = svg.append('g').selectAll('text.outer')
+                .data(nodes).enter().append('text')
+                .attr('class', 'node-label')
+                .text(d => d.label.length > 16 ? d.label.slice(0, 14) + '…' : d.label);
+
+            const tooltip = d3.select('#tooltip');
+            node.on('mouseover', function (event, d) {
+                let html = `<strong>${d.label}</strong>`;
+                if (d.meta.payloadTypes) html += `<br>PayloadTypes: ${d.meta.payloadTypes}`;
+                if (d.meta.step !== undefined) html += `<br>步骤 #${d.meta.step}`;
+                if (d.meta.groupId)  html += `<br>GroupId: ${d.meta.groupId}`;
+                if (d.meta.version)  html += `<br>Version: ${d.meta.version}`;
+                if (d.meta.source)   html += `<br>Source: ${d.meta.source}`;
+                tooltip.style('opacity', 1).html(html)
+                    .style('left', (event.pageX + 12) + 'px')
+                    .style('top',  (event.pageY - 30) + 'px');
+            }).on('mouseout', () => tooltip.style('opacity', 0));
+
+            sim.on('tick', () => {
+                link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                node.attr('cx', d => d.x).attr('cy', d => d.y);
+                labelInner.attr('x', d => d.x).attr('y', d => d.y);
+                label.attr('x', d => d.x).attr('y', d => d.y + d.r + 14);
+            });
+        }
+
+        // ── Statistics ────────────────────────────────────────────────────
+
+        function updateStatistics() {
+            let chains = 0, pipeline = 0, artifacts = 0;
+            Object.values(allChainData).forEach(chain => {
+                chains++;
+                pipeline  += (chain.pipeline       || []).length;
+                artifacts += (chain.maven_artifacts || []).length;
+            });
+            document.getElementById('totalChains').textContent    = chains;
+            document.getElementById('totalPipeline').textContent  = pipeline;
+            document.getElementById('totalArtifacts').textContent = artifacts;
+            document.getElementById('avgArtifacts').textContent   = chains > 0 ? Math.round(artifacts / chains) : 0;
+        }
+    </script>
+</body>
+</html>
